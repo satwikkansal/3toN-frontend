@@ -6,6 +6,8 @@ import {
   useState,
 } from "react";
 import axios from "axios";
+import VideoJs from "./VideoJs";
+import videojs from "video.js";
 function App() {
   const videoEl = useRef(null);
   const stream = useRef(null);
@@ -28,10 +30,28 @@ function App() {
     })();
   }, []);
 
+  /*const startStream = async () => {
+    videoEl.current.volume = 0;
+
+    stream.current =
+      await navigator.mediaDevices.getUserMedia(
+        {
+          video: true,
+          audio: true,
+        }
+      );
+
+    videoEl.current.srcObject =
+      stream.current;
+    videoEl.current.play();
+  };*/
+
   const [loading, setLoading] =
     useState(false);
   const [live, setLive] =
     useState(false);
+  const [playBack, setPlayback] =
+    useState("");
 
   const onButtonClick = async () => {
     setLoading(true);
@@ -46,18 +66,25 @@ function App() {
             headers: {
               "content-type":
                 "application/json",
-              authorization: `Bearer ${process.env.REACT_APP_F5LABS_LIVE_PEER_API_KEY}`, // API Key needs to be passed as a header
+              authorization: `Bearer ${process.env.REACT_APP_F5LABS_LIVE_PEER_API_KEY}`,
+              "Access-Control-Allow-Origin":
+                "*",
             },
           }
         )
         .then((response) => {
           setLive(true);
+          setPlayback(
+            response?.data?.playbackId
+          );
           setLoading(false);
           if (!stream.current) {
             alert(
               "Video stream was not started."
             );
           }
+
+          console.log(response);
 
           if (
             !response?.data?.streamKey
@@ -67,6 +94,29 @@ function App() {
             );
             return;
           }
+
+          const getDetails =
+            async () => {
+              await axios
+                .get(
+                  `https://livepeer.com/api/stream/${response?.data?.id}`,
+                  {
+                    headers: {
+                      "content-type":
+                        "application/json",
+                      authorization: `Bearer ${process.env.REACT_APP_F5LABS_LIVE_PEER_API_KEY}`, // API Key needs to be passed as a header
+                    },
+                  }
+                )
+                .then((response) => {
+                  console.log(response);
+                })
+                .catch((error) => {
+                  console.log(error);
+                });
+            };
+
+          getDetails();
 
           const client = new Client();
 
@@ -108,20 +158,25 @@ function App() {
       .getTracks()
       .forEach((track) => track.stop());
     setLive(false);
+    videoEl.current.srcObject = null;
   }
 
   return (
-    <div className="">
+    <div className="p-5 bg-[#111119] h-screen w-full">
       <video
-        className=""
+        className="rounded-2xl mx-auto xl:w-1/2 w-3/4"
         ref={videoEl}
       />
-      <div className="flex items-center space-x-4 mt-4 ml-2">
+      {playBack && (
+        <VideoJs
+          url={`https://livepeercdn.com/hls/${playBack}/index.m3u8`}
+        />
+      )}
+      <div className="flex items-center space-x-4 mt-4 ml-2 justify-center">
         <button
           className="p-2 bg-green-500 rounded-lg px-5 text-xl font-extrabold text-white"
           onClick={() => {
             onButtonClick();
-            videoEl.current.play();
           }}
         >
           Start
