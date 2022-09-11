@@ -5,7 +5,7 @@ import React, {
 import videojs from "video.js";
 import "video.js/dist/video-js.css";
 
-function VideoJs(url) {
+function VideoJs({ url }) {
   const videoRef = useRef(null);
 
   useEffect(() => {
@@ -18,16 +18,20 @@ function VideoJs(url) {
   return (
     <div data-vjs-player>
       <video
-        width="600"
-        height="300"
-        className="video-js vjs-default-skin"
+        id="my-video"
+        className="video-js"
         controls
+        preload="auto"
+        width="640"
+        height="264"
+        data-setup="{}"
         ref={videoRef}
+        src={url}
       >
         <source
           src={url}
           type="application/x-mpegURL"
-        ></source>
+        />
       </video>
     </div>
   );

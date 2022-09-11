@@ -8,6 +8,7 @@ import {
 import axios from "axios";
 import VideoJs from "./VideoJs";
 import videojs from "video.js";
+import LivePeerProvider from "./LivePeerProvider";
 function App() {
   const videoEl = useRef(null);
   const stream = useRef(null);
@@ -67,24 +68,18 @@ function App() {
               "content-type":
                 "application/json",
               authorization: `Bearer ${process.env.REACT_APP_F5LABS_LIVE_PEER_API_KEY}`,
-              "Access-Control-Allow-Origin":
-                "*",
             },
           }
         )
         .then((response) => {
           setLive(true);
-          setPlayback(
-            response?.data?.playbackId
-          );
+
           setLoading(false);
           if (!stream.current) {
             alert(
               "Video stream was not started."
             );
           }
-
-          console.log(response);
 
           if (
             !response?.data?.streamKey
@@ -110,6 +105,10 @@ function App() {
                 )
                 .then((response) => {
                   console.log(response);
+                  setPlayback(
+                    response?.data
+                      ?.playbackId
+                  );
                 })
                 .catch((error) => {
                   console.log(error);
@@ -160,7 +159,9 @@ function App() {
     setLive(false);
     videoEl.current.srcObject = null;
   }
-
+  console.log(
+    `https://livepeercdn.com/hls/${playBack}/index.m3u8`
+  );
   return (
     <div className="p-5 bg-[#111119] h-screen w-full">
       <video
