@@ -63,12 +63,26 @@ function Main() {
   const [
     paymentTokenAddress,
     setPaymentTokenAddress,
-  ] = useState("");
+  ] = useState("fDAIx");
   const [
     perSecondCost,
     setPerSecondCost,
   ] = useState(0);
 
+  const [
+    showStreamUrl,
+    setShowStreamUrl,
+  ] = useState("");
+  const [
+    streamUrlLoading,
+    setStreamUrlLoading,
+  ] = useState(false);
+
+  const big = BigInt(
+    Number(
+      Number(perSecondCost) * 10 ** 18
+    )
+  );
   const onButtonClick = async () => {
     setLoading(true);
     try {
@@ -88,7 +102,20 @@ function Main() {
         )
         .then((response) => {
           setLive(true);
-          console.log(response);
+          setPlayback(
+            response?.data?.playbackId
+          );
+          setShowStreamUrl(
+            `https://livepeercdn.com/hls/${response?.data?.playbackId}/index.m3u8`
+          );
+          startStream(
+            playBack,
+            SuperLiveContract,
+            big,
+            config.goerli.paymentTokens[
+              paymentTokenAddress
+            ]
+          );
           setLoading(false);
           if (!stream.current) {
             alert(
@@ -105,37 +132,6 @@ function Main() {
             return;
           }
 
-          const getDetails =
-            async () => {
-              await axios
-                .get(
-                  `https://livepeer.com/api/stream/${response?.data?.id}`,
-                  {
-                    headers: {
-                      "content-type":
-                        "application/json",
-                      authorization: `Bearer ${process.env.REACT_APP_F5LABS_LIVE_PEER_API_KEY}`, // API Key needs to be passed as a header
-                    },
-                  }
-                )
-                .then((response) => {
-                  localStorage.setItem(
-                    "playBackId",
-                    response?.data
-                      ?.playbackId
-                  );
-                  setPlayback(
-                    response?.data
-                      ?.playbackId
-                  );
-                })
-                .catch((error) => {
-                  console.log(error);
-                });
-            };
-
-          getDetails();
-
           const client = new Client();
 
           const session = client.cast(
@@ -143,9 +139,6 @@ function Main() {
             response?.data?.streamKey
           );
           session.on("open", () => {
-            console.log(
-              "Stream started."
-            );
             alert(
               "Stream started; visit Livepeer Dashboard."
             );
@@ -168,6 +161,29 @@ function Main() {
       console.error(e);
     }
   };
+
+  /*const getDetails = async () => {
+    await axios
+      .get(
+        `https://livepeer.com/api/stream/${livepeerStreamId}`,
+        {
+          headers: {
+            "content-type":
+              "application/json",
+            authorization: `Bearer ${process.env.REACT_APP_F5LABS_LIVE_PEER_API_KEY}`, // API Key needs to be passed as a header
+          },
+        }
+      )
+      .then((response) => {
+        console.log(response.data);
+        setPlayback(
+          response?.data?.playbackId
+        );
+      })
+      .catch((error) => {
+        console.log(error);
+      });
+  };*/
 
   function stopBothVideoAndAudio(
     stream
@@ -204,6 +220,8 @@ function Main() {
     // paymentTokenAddress: Contract Address of Payment super token
     // perSecondRate: Per second cost of the stream charged by creator
 
+    setStreamUrlLoading(true);
+
     // start stream
     let startTxn = await contract.start(
       streamId,
@@ -217,14 +235,13 @@ function Main() {
       await contract.isStreamLive(
         streamId
       );
+    if (isLive) {
+      setStreamUrlLoading(false);
+    }
     return isLive;
   }
 
-  const big = BigInt(
-    Number(
-      Number(perSecondCost) * 10 ** 18
-    )
-  );
+  console.log(playBack);
 
   return (
     <>
@@ -255,6 +272,18 @@ function Main() {
             )
           }
         />
+        {streamUrlLoading ? (
+          <h1 className="text-white text-lg font-bold">
+            Please wait we are
+            generating your stream
+            url...
+          </h1>
+        ) : (
+          <h1 className="text-white text-xl font-bold">
+            {showStreamUrl}
+          </h1>
+        )}
+
         <label
           htmlFor="paymentTokenAddress"
           className="text-white text-lg mt-3 mb-2"
@@ -287,13 +316,6 @@ function Main() {
             className="p-2 bg-green-500 rounded-lg px-5 text-xl font-extrabold text-white"
             onClick={() => {
               onButtonClick();
-              startStream(
-                playBack,
-                SuperLiveContract,
-                big,
-                config.goerli
-                  .paymentTokens.fDAIx
-              );
             }}
             disabled={
               streamName === "" ||
