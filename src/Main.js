@@ -109,7 +109,7 @@ function Main() {
             `https://livepeercdn.com/hls/${response?.data?.playbackId}/index.m3u8`
           );
           startStream(
-            playBack,
+            response?.data?.playbackId,
             SuperLiveContract,
             big,
             config.goerli.paymentTokens[
