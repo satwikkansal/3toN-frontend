@@ -6,6 +6,12 @@ import {
   useState,
 } from "react";
 import axios from "axios";
+import config from "./config/config";
+import {
+  Contract,
+  ethers,
+} from "ethers";
+import abi from "./abi/SuperliveAbi.json";
 
 function Main() {
   const videoEl = useRef(null);
@@ -52,6 +58,17 @@ function Main() {
   const [playBack, setPlayback] =
     useState("");
 
+  const [streamName, setStreamName] =
+    useState("");
+  const [
+    paymentTokenAddress,
+    setPaymentTokenAddress,
+  ] = useState("");
+  const [
+    perSecondCost,
+    setPerSecondCost,
+  ] = useState(0);
+
   const onButtonClick = async () => {
     setLoading(true);
     try {
@@ -59,7 +76,7 @@ function Main() {
         .post(
           "https://livepeer.com/api/stream",
           {
-            name: "first stream",
+            name: `${streamName}`,
           },
           {
             headers: {
@@ -161,52 +178,161 @@ function Main() {
     setLive(false);
   }
 
+  const provider =
+    new ethers.providers.Web3Provider(
+      window.ethereum
+    );
+
+  const signer = provider.getSigner();
+
+  const SuperLiveContract =
+    new ethers.Contract(
+      process.env.REACT_APP_F5LABS_LIVE_PEER_SMART_CONTRACT_ADDRESS,
+      abi,
+      signer
+    );
+
+  async function startStream(
+    streamId,
+    contract,
+    rate,
+    fDaiXAddress
+  ) {
+    // needs to be called with stream owner wallet.
+    // streamId: Unique ID of the string
+    // contract: The SuperLive contract instance
+    // paymentTokenAddress: Contract Address of Payment super token
+    // perSecondRate: Per second cost of the stream charged by creator
+
+    // start stream
+    let startTxn = await contract.start(
+      streamId,
+      rate,
+      fDaiXAddress
+    );
+    let startTxnReceipt =
+      await startTxn.wait();
+    // check status
+    let isLive =
+      await contract.isStreamLive(
+        streamId
+      );
+    return isLive;
+  }
+
+  const big = BigInt(
+    Number(
+      Number(perSecondCost) * 10 ** 18
+    )
+  );
+
   return (
     <>
       {" "}
       <video
-        className="rounded-2xl mx-auto xl:w-1/2 w-3/4"
+        className="rounded-2xl mx-auto xl:w-1/3 w-3/4"
         ref={videoEl}
       />
-      <div className="flex items-center space-x-4 mt-4 ml-2 justify-center">
-        <button
-          className="p-2 bg-green-500 rounded-lg px-5 text-xl font-extrabold text-white"
-          onClick={() => {
-            onButtonClick();
-          }}
+      <div className="flex flex-col items-center p-3">
+        <input
+          type="text"
+          className="w-1/3 p-2 rounded-md focus:outline-none"
+          placeholder="Enter your stream name"
+          onChange={(e) =>
+            setStreamName(
+              e.target.value
+            )
+          }
+        />
+        <input
+          value={perSecondCost}
+          type="number"
+          className="w-1/3 p-2 rounded-md focus:outline-none mt-3"
+          placeholder="Enter your Per second cost of the stream you want to charged"
+          onChange={(e) =>
+            setPerSecondCost(
+              e.target.value
+            )
+          }
+        />
+        <label
+          htmlFor="paymentTokenAddress"
+          className="text-white text-lg mt-3 mb-2"
         >
-          Start
-        </button>
-        <button
-          className="p-2 px-5 bg-red-500 rounded-lg text-xl font-extrabold text-white"
-          onClick={() => {
-            stopBothVideoAndAudio(
-              stream.current
+          Please Select
+          PaymentTokenAddress
+        </label>
+        <select
+          name="PaymentTokenAddress"
+          id="paymentTokenAddress"
+          onChange={(e) => {
+            setPaymentTokenAddress(
+              e.target.value
             );
           }}
         >
-          Stop
-        </button>
-        <div
-          className={`rounded-lg ${
-            live
-              ? "bg-green-400"
-              : "bg-slate-600"
-          } p-2 px-5`}
-        >
-          {loading && (
-            <h1>Loading...</h1>
-          )}
+          <option value="fDAIx">
+            FDAIx
+          </option>
+          <option value="fUSDCx">
+            FUSDCx
+          </option>
+          <option value="fTUSDx">
+            FTUSDx
+          </option>
+        </select>
+        <div className="flex items-center space-x-4 mt-4 ml-2 justify-center">
+          {" "}
+          <button
+            className="p-2 bg-green-500 rounded-lg px-5 text-xl font-extrabold text-white"
+            onClick={() => {
+              onButtonClick();
+              startStream(
+                playBack,
+                SuperLiveContract,
+                big,
+                config.goerli
+                  .paymentTokens.fDAIx
+              );
+            }}
+            disabled={
+              streamName === "" ||
+              perSecondCost === 0
+            }
+          >
+            Start
+          </button>
+          <button
+            className="p-2 px-5 bg-red-500 rounded-lg text-xl font-extrabold text-white"
+            onClick={() => {
+              stopBothVideoAndAudio(
+                stream.current
+              );
+            }}
+          >
+            Stop
+          </button>
+          <div
+            className={`rounded-lg ${
+              live
+                ? "bg-green-400"
+                : "bg-slate-600"
+            } p-2 px-5`}
+          >
+            {loading && (
+              <h1>Loading...</h1>
+            )}
 
-          {live ? (
-            <h1 className="text-white text-xl font-extrabold">
-              Live
-            </h1>
-          ) : (
-            <h1 className="text-white text-xl font-extrabold">
-              Offline
-            </h1>
-          )}
+            {live ? (
+              <h1 className="text-white text-xl font-extrabold">
+                Live
+              </h1>
+            ) : (
+              <h1 className="text-white text-xl font-extrabold">
+                Offline
+              </h1>
+            )}
+          </div>
         </div>
       </div>
     </>
