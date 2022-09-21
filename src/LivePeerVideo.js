@@ -8,7 +8,7 @@ import { ethers } from "ethers";
 import abi from "./abi/SuperliveAbi.json";
 import ISuperTokenAbi from "./abi/ISuperTokenAbi.json";
 import IERC20Abi from "./abi/IERC20Abi.json";
-
+import { Web3Provider } from "@ethersproject/providers";
 import { Framework } from "@superfluid-finance/sdk-core";
 
 function LivePeerVideo() {
@@ -72,8 +72,8 @@ function LivePeerVideo() {
 
     // todo verify: provider.address should be address of the joinee
 
-    let joineeSigner =
-      provider.getSigner();
+    /*let joineeSigner =
+      provider.getSigner();*/
 
     /*await joineeSigner
       .getAddress()
@@ -103,6 +103,13 @@ function LivePeerVideo() {
         provider._network.chainId, // todo: need to check if this works with metamask provider
       provider: provider,
     });
+
+    const metamaskProvider =
+      new Web3Provider(window.ethereum);
+    const joineeSigner =
+      sf.createSigner({
+        web3Provider: metamaskProvider,
+      });
 
     if (
       streamPaymentTokenBalance == 0
