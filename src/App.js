@@ -8,8 +8,6 @@ import Main from "./Main";
 import LivePeerVideo from "./LivePeerVideo";
 
 function App() {
-  const playbackId =
-    localStorage.getItem("playBackId");
   return (
     <div className="p-5 bg-[#111119] h-screen w-full">
       <Routes>
@@ -18,12 +16,8 @@ function App() {
           element={<Main />}
         />
         <Route
-          path="/join"
-          element={
-            <LivePeerVideo
-              playbackId={playbackId}
-            />
-          }
+          path="/join/:id"
+          element={<LivePeerVideo />}
         />
       </Routes>
     </div>
