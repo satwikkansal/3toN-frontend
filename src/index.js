@@ -8,6 +8,39 @@ import {
   LivepeerConfig,
 } from "@livepeer/react";
 import { studioProvider } from "livepeer/providers/studio";
+import { ChakraProvider } from "@chakra-ui/react";
+
+import "@rainbow-me/rainbowkit/styles.css";
+
+import {
+  getDefaultWallets,
+  RainbowKitProvider,
+} from "@rainbow-me/rainbowkit";
+import {
+  chain,
+  configureChains,
+  createClient,
+  WagmiConfig,
+} from "wagmi";
+import { publicProvider } from "wagmi/providers/public";
+
+const { chains, provider } =
+  configureChains(
+    [chain.polygon, chain.optimism],
+    [publicProvider()]
+  );
+
+const { connectors } =
+  getDefaultWallets({
+    appName: "SuperLive",
+    chains,
+  });
+
+const wagmiClient = createClient({
+  autoConnect: true,
+  connectors,
+  provider,
+});
 
 const client = createReactClient({
   provider: studioProvider({
@@ -21,9 +54,19 @@ const root = ReactDOM.createRoot(
   document.getElementById("root")
 );
 root.render(
-  <BrowserRouter>
-    <LivepeerConfig client={client}>
-      <App />
-    </LivepeerConfig>
-  </BrowserRouter>
+  <ChakraProvider>
+    <WagmiConfig client={wagmiClient}>
+      <RainbowKitProvider
+        chains={chains}
+      >
+        <BrowserRouter>
+          <LivepeerConfig
+            client={client}
+          >
+            <App />
+          </LivepeerConfig>
+        </BrowserRouter>
+      </RainbowKitProvider>
+    </WagmiConfig>
+  </ChakraProvider>
 );

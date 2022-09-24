@@ -8,7 +8,10 @@ import { ethers } from "ethers";
 import abi from "./abi/SuperliveAbi.json";
 import ISuperTokenAbi from "./abi/ISuperTokenAbi.json";
 import IERC20Abi from "./abi/IERC20Abi.json";
+import { Web3Provider } from "@ethersproject/providers";
 import { Framework } from "@superfluid-finance/sdk-core";
+import Header from "./Header";
+import Chats from "./Chats";
 
 function LivePeerVideo() {
   const { id } = useParams();
@@ -42,6 +45,7 @@ function LivePeerVideo() {
       .getSigner()
       .getAddress()
       .then((address) => {
+        console.log(address);
         join(
           id,
           SuperLiveContract,
@@ -68,6 +72,8 @@ function LivePeerVideo() {
       );
     let paymentTokenAddress =
       streamData.token;
+
+    // todo verify: provider.address should be address of the joinee
 
     /*let joineeSigner =
       provider.getSigner();*/
@@ -101,18 +107,12 @@ function LivePeerVideo() {
       provider: provider,
     });
 
-    // const metamaskProvider =
-    //   new Web3Provider(window.ethereum);
-    // const joineeSigner =
-    //   sf.createSigner({
-    //     web3Provider: provider,
-    //   });
-
-    let joineeSigner = provider.getSigner();
-    console.log("Joinee signer is");
-    console.log(joineeSigner);
-
-
+    const metamaskProvider =
+      new Web3Provider(window.ethereum);
+    const joineeSigner =
+      sf.createSigner({
+        web3Provider: metamaskProvider,
+      });
 
     if (
       streamPaymentTokenBalance == 0
@@ -182,7 +182,6 @@ function LivePeerVideo() {
     if (
       operatorPermissionsExist == false
     ) {
-      console.log("Updating flow")
       // if permission doesn't exist we have to get it
       let updateFlowOperatorOperation =
         await sf.cfaV1.updateFlowOperatorPermissions(
@@ -206,7 +205,7 @@ function LivePeerVideo() {
 
     // Now after all this we can call join function, which'd create flow on operators behalf
     let joinTxn = await contract
-      .connect(joineeSigner)
+      .connect(joineeAddress)
       .join(streamId);
     let joinTxnReceipt =
       await joinTxn.wait();
@@ -222,22 +221,29 @@ function LivePeerVideo() {
   }
 
   return (
-    <>
-      <VideoPlayer
-        autoPlay
-        loop
-        muted
-        playbackId={id}
-        width="600px"
-        height="550px"
-      />
-      <button
-        className="bg-blue-500 text-white"
-        onClick={JoinButton}
-      >
-        Join
-      </button>
-    </>
+    <div className="overflow-hidden h-full">
+      <Header />
+      <div className="flex flex-1">
+        <div className="flex-[0.7]">
+          <VideoPlayer
+            autoPlay
+            loop
+            muted
+            playbackId={id}
+            width="700px"
+            height="300px"
+            className="rounded-lg mx-auto mt-3"
+          />
+          <button
+            className="bg-blue-500 text-white p-3 rounded-lg"
+            onClick={JoinButton}
+          >
+            Join
+          </button>
+        </div>
+        <Chats />
+      </div>
+    </div>
   );
 }
 

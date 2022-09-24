@@ -12,6 +12,24 @@ import {
   ethers,
 } from "ethers";
 import abi from "./abi/SuperliveAbi.json";
+import Header from "./Header";
+import {
+  InputGroup,
+  InputLeftElement,
+  Input,
+  InputRightElement,
+  Select,
+  Tooltip,
+  Skeleton,
+} from "@chakra-ui/react";
+import { MdContentCopy } from "react-icons/md";
+import { FaShareSquare } from "react-icons/fa";
+import {
+  BsCameraVideo,
+  BsCameraVideoFill,
+  BsFillMicFill,
+} from "react-icons/bs";
+import { IoMdArrowDropdown } from "react-icons/io";
 
 function Main() {
   const videoEl = useRef(null);
@@ -63,7 +81,7 @@ function Main() {
   const [
     paymentTokenAddress,
     setPaymentTokenAddress,
-  ] = useState("fDAIx");
+  ] = useState("");
   const [
     perSecondCost,
     setPerSecondCost,
@@ -76,7 +94,7 @@ function Main() {
   const [
     streamUrlLoading,
     setStreamUrlLoading,
-  ] = useState(false);
+  ] = useState(true);
 
   const big = BigInt(
     Number(
@@ -101,7 +119,6 @@ function Main() {
           }
         )
         .then((response) => {
-          setLive(true);
           setPlayback(
             response?.data?.playbackId
           );
@@ -114,7 +131,8 @@ function Main() {
             big,
             config.goerli.paymentTokens[
               paymentTokenAddress
-            ]
+            ],
+            streamName
           );
           setLoading(false);
           if (!stream.current) {
@@ -207,12 +225,14 @@ function Main() {
       abi,
       signer
     );
-
+  const [streamStart, setStreamStart] =
+    useState(false);
   async function startStream(
     streamId,
     contract,
     rate,
-    fDaiXAddress
+    fDaiXAddress,
+    StreamName
   ) {
     // needs to be called with stream owner wallet.
     // streamId: Unique ID of the string
@@ -221,143 +241,164 @@ function Main() {
     // perSecondRate: Per second cost of the stream charged by creator
 
     setStreamUrlLoading(true);
+    setStreamStart(true);
 
     // start stream
     let startTxn = await contract.start(
       streamId,
       rate,
-      fDaiXAddress
+      fDaiXAddress,
+      StreamName
     );
     let startTxnReceipt =
       await startTxn.wait();
+    if (startTxnReceipt) {
+      setStreamUrlLoading(false);
+      setLive(true);
+      setStreamStart(false);
+    }
     // check status
     let isLive =
       await contract.isStreamLive(
         streamId
       );
-    if (isLive) {
-      setStreamUrlLoading(false);
-    }
+
     return isLive;
   }
-
-  console.log(playBack);
-
   return (
-    <>
-      {" "}
-      <video
-        className="rounded-2xl mx-auto xl:w-1/3 w-3/4"
-        ref={videoEl}
-      />
-      <div className="flex flex-col items-center p-3">
-        <input
-          type="text"
-          className="w-1/3 p-2 rounded-md focus:outline-none"
-          placeholder="Enter your stream name"
-          onChange={(e) =>
-            setStreamName(
-              e.target.value
-            )
-          }
+    <div>
+      <Header />
+      <div className="relative ">
+        <video
+          className="rounded-2xl mx-auto xl:w-[40%] w-[85%] mt-7 shadow-lg"
+          ref={videoEl}
         />
-        <input
-          value={perSecondCost}
-          type="number"
-          className="w-1/3 p-2 rounded-md focus:outline-none mt-3"
-          placeholder="Enter your Per second cost of the stream you want to charged"
-          onChange={(e) =>
-            setPerSecondCost(
-              e.target.value
-            )
-          }
-        />
-        {streamUrlLoading ? (
-          <h1 className="text-white text-lg font-bold">
-            Please wait we are
-            generating your stream
-            url...
-          </h1>
+        {live ? (
+          <div className="absolute text-white text-xs font-bold top-2 right-[29rem] bg-black/60 p-0.5 w-14 rounded-lg">
+            🟢 Live
+          </div>
         ) : (
-          <h1 className="text-white text-xl font-bold">
-            {showStreamUrl}
-          </h1>
+          <div className="absolute flex items-center text-white text-xs font-bold top-2 right-[29rem] bg-black/60 p-0.5 px-2 w-auto rounded-lg space-x-1">
+            <span className="loader"></span>
+            <span className="mb-1 mr-2">
+              {streamStart
+                ? "Please wait we are waiting for transaction. "
+                : "waiting to go live"}
+            </span>
+          </div>
         )}
+      </div>
+      <div className="flex flex-col">
+        <div className="xl:w-[40%] w-[85%] flex items-center space-x-2 mx-auto mt-2 bg-white p-2 rounded-lg">
+          <Tooltip
+            label="Enter per second amount"
+            hasArrow
+          >
+            <InputGroup>
+              <InputLeftElement
+                pointerEvents="none"
+                color="green.500"
+                children="$"
+                className="font-extrabold text-xs"
+              />
+              <Input
+                placeholder="Amount"
+                variant="filled"
+                bg="#D6D6D6"
+                className="placeholder:text-superlive_gray_input_text placeholder:font-extrabold placeholder:text-lg"
+                type="number"
+                onChange={(e) =>
+                  setPerSecondCost(
+                    e.target.value
+                  )
+                }
+              />
+            </InputGroup>
+          </Tooltip>
+          <Select
+            icon={<IoMdArrowDropdown />}
+            variant="filled"
+            placeholder="Currency"
+            bg="#D6D6D6"
+            className="text-superlive_gray_input_text text-lg font-extrabold"
+            onChange={(e) => {
+              setPaymentTokenAddress(
+                e.target.value
+              );
+            }}
+          >
+            <option value="fDAIx">
+              FDAIx
+            </option>
+            <option value="fUSDCx">
+              FUSDCx
+            </option>
+            <option value="fTUSDx">
+              FTUSDx
+            </option>
+          </Select>
 
-        <label
-          htmlFor="paymentTokenAddress"
-          className="text-white text-lg mt-3 mb-2"
-        >
-          Please Select
-          PaymentTokenAddress
-        </label>
-        <select
-          name="PaymentTokenAddress"
-          id="paymentTokenAddress"
-          onChange={(e) => {
-            setPaymentTokenAddress(
-              e.target.value
-            );
-          }}
-        >
-          <option value="fDAIx">
-            FDAIx
-          </option>
-          <option value="fUSDCx">
-            FUSDCx
-          </option>
-          <option value="fTUSDx">
-            FTUSDx
-          </option>
-        </select>
-        <div className="flex items-center space-x-4 mt-4 ml-2 justify-center">
-          {" "}
+          <div className="bg-superlive_light_blue w-full flex items-center space-x-2 h-10 rounded-md p-2 transition-all duration-300 ease-linear">
+            <Skeleton
+              isLoaded={
+                !streamUrlLoading
+              }
+            >
+              <div className="w-40">
+                <a
+                  href={`${process.env.REACT_APP_DOMAIN_NAME}/join/${playBack}`}
+                  target="_blank"
+                >
+                  <p className="text-xs text-blue-500 underline">
+                    {`${process.env.REACT_APP_DOMAIN_NAME}/join/${playBack}`}
+                  </p>
+                </a>
+              </div>
+            </Skeleton>
+            <div className="flex items-center space-x-2">
+              <MdContentCopy className="text-blue-500 hover:cursor-pointer transition-all duration-300 ease-linear hover:text-gray-600" />
+              <FaShareSquare className="text-blue-500 hover:cursor-pointer transition-all duration-300 ease-linear hover:text-gray-600" />
+            </div>
+          </div>
+        </div>
+        <div className="xl:w-[40%] w-[85%] flex items-center space-x-2 mx-auto mt-2 bg-white p-2 rounded-lg">
+          <Input
+            placeholder="Enter your live stream name"
+            variant="filled"
+            bg="#D6D6D6"
+            className="placeholder:text-superlive_gray_input_text placeholder:font-extrabold placeholder:text-lg"
+            type="text"
+            onChange={(e) =>
+              setStreamName(
+                e.target.value
+              )
+            }
+          />
+
           <button
-            className="p-2 bg-green-500 rounded-lg px-5 text-xl font-extrabold text-white"
             onClick={() => {
               onButtonClick();
             }}
             disabled={
               streamName === "" ||
-              perSecondCost === 0
+              perSecondCost === 0 ||
+              paymentTokenAddress === ""
             }
+            className="bg-superlive_blue text-white font-extrabold text-sm p-1 w-40 h-10 rounded-md transition-all duration-300 ease-linear hover:bg-green-500  hover:cursor-pointer disabled:cursor-not-allowed"
           >
-            Start
+            Go Live
           </button>
-          <button
-            className="p-2 px-5 bg-red-500 rounded-lg text-xl font-extrabold text-white"
-            onClick={() => {
-              stopBothVideoAndAudio(
-                stream.current
-              );
-            }}
-          >
-            Stop
-          </button>
-          <div
-            className={`rounded-lg ${
-              live
-                ? "bg-green-400"
-                : "bg-slate-600"
-            } p-2 px-5`}
-          >
-            {loading && (
-              <h1>Loading...</h1>
-            )}
-
-            {live ? (
-              <h1 className="text-white text-xl font-extrabold">
-                Live
-              </h1>
-            ) : (
-              <h1 className="text-white text-xl font-extrabold">
-                Offline
-              </h1>
-            )}
+          <div className="bg-superlive_light_blue w-1/2 xl:w-[25%] flex items-center space-x-2 h-10 rounded-md p-2">
+            <div className="w-10 h-10 rounded-3xl flex items-center justify-center bg-superlive_blue text-white transition-all duration-300 ease-linear hover:bg-red-500 hover:rounded-xl hover:cursor-pointer">
+              <BsCameraVideoFill />
+            </div>
+            <div className="w-10 h-10 rounded-3xl flex items-center justify-center bg-superlive_blue text-white transition-all duration-300 ease-linear hover:bg-red-500 hover:rounded-xl hover:cursor-pointer">
+              <BsFillMicFill />
+            </div>
           </div>
         </div>
       </div>
-    </>
+    </div>
   );
 }
 
