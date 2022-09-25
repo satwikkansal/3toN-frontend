@@ -260,6 +260,8 @@ function Main() {
     setContractGetStreamData,
   ] = useState([]);
 
+  const [address, setAddress] = useState("");
+
   async function getStreamData(
     streamid,
     contract
@@ -301,6 +303,7 @@ function Main() {
       setLive(true);
       setStreamStart(false);
       getStreamData(streamId, contract);
+      setAddress(ContractgetStreamData.owner)
     }
     // check status
     let isLive =
@@ -543,6 +546,7 @@ function Main() {
             streamData={
               ContractgetStreamData
             }
+            walletAddress={signer._address}
           />
         </div>
       </div>

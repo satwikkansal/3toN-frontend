@@ -16,9 +16,9 @@ import { Client } from "@xmtp/xmtp-js";
 import { ethers } from "ethers";
 import { useEffect } from "react";
 import { useState } from "react";
-import Moment from "react-moment";
 import abi from "./abi/SuperliveAbi.json";
 import Stats from "./Stats";
+import moment from 'moment';
 
 window.Buffer =
   window.Buffer ||
@@ -27,6 +27,7 @@ window.Buffer =
 function Chats({
   streamId,
   streamData,
+  walletAddress
 }) {
   const [messages, setMessages] =
     useState("");
@@ -53,7 +54,8 @@ function Chats({
       getExistingMessages(streamId);
       getNumbersOfJoinees(
         streamId,
-        SuperLiveContract
+        SuperLiveContract,
+        walletAddress
       );
     }, 1000);
   }, [streamId]);
@@ -87,20 +89,59 @@ function Chats({
   const [views, setViews] =
     useState("0");
 
+  const [expenses, setExpenses] = 
+    useState("0.00");
+
+  const [earnings, setEarnings] = 
+    useState("0.00");
+  
+  const [startEpoch, setStartEpoch] = 
+    useState("00:00");
+
   async function getNumbersOfJoinees(
     streamid,
-    contract
+    contract,
+    walletAddress
   ) {
     let getnumbersOfJoinees =
       await contract.numJoinees(
         streamid
       );
-    console.log(
-      getnumbersOfJoinees?.toString()
-    );
-    setViews(
-      getnumbersOfJoinees?.toString()
-    );
+    
+    let providerSigner = await Provider.getSigner();
+    let address = await providerSigner.getAddress();
+    
+    if (streamid) {
+      let streamData = await contract.getStreamData(streamid);
+      let ts = streamData.start_time.toNumber();
+      let current = moment().format("X");
+      let secondsElapsed = current - ts;
+      setStartEpoch(moment.duration(secondsElapsed, "seconds").format("hh:mm:ss"));
+
+      let moneyStat = "0.0";
+      if (address) {
+        let expenses = await contract.expenditureSoFar(streamid, address);
+        expenses = ethers.utils.formatEther(expenses);
+        let earnings = await contract.earningSoFar(streamid);
+        earnings = ethers.utils.formatEther(earnings);
+        {
+          if (address == streamData.owner) {
+            moneyStat = earnings;
+          } else {
+            moneyStat = expenses;
+          }
+        // console.log("Expenses are:", expenses);
+        setExpenses(moneyStat.slice(0, 5));
+      }}
+      // console.log(
+      //   getnumbersOfJoinees?.toString()
+      // );
+      setViews(
+        getnumbersOfJoinees?.toString()
+      );
+          
+      
+    }
   }
 
   const getExistingMessages = async (
@@ -167,7 +208,7 @@ function Chats({
 
   return (
     <div className="flex-[0.3]">
-      <Stats views={views} />
+      <Stats views={views} expenses={expenses} startEpoch={startEpoch} earnings={earnings}/>
       <div className="overflow-y-scroll h-[51%] bg-[#333333] rounded-lg p-2 no-scrollbar space-y-3 fixed top-48 mr-4 w-[29.5%]">
         {chats?.length === 0 ? (
           <div className="mx-auto flex justify-center items-center h-full max-w-full text-white font-extrabold text-xl">

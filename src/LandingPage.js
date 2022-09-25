@@ -14,10 +14,7 @@ function LandingPage() {
           {process.env.REACT_APP_NAME}
         </h1>
         <p class="mt-10 text-lg text-white font-bold text-center max-w-3xl mx-auto dark:text-slate-400">
-          One-click Live Streams. Login
-          with Web3, create token-gated
-          spaces, use NFT avatars and
-          decentralized storage.
+          Create permissionless video streams and earn revenue for precise watch-time.
         </p>
       </div>
       <div className="flex items-center justify-center">

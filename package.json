@@ -19,6 +19,7 @@
     "buffer": "^6.0.3",
     "ethers": "^5.7.1",
     "framer-motion": "^7.3.6",
+    "graphql": "^16.6.0",
     "livepeer": "^0.4.0",
     "moment": "^2.29.4",
     "react": "^18.2.0",

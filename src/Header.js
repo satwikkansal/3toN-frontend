@@ -5,7 +5,7 @@ function Header() {
   return (
     <Box className="bg-white flex items-center justify-between px-5 py-2 rounded-lg">
       <Box className="text-xl font-extrabold">
-        LOGO
+      📡 3toN
       </Box>
       <Box>
         <ConnectButton />

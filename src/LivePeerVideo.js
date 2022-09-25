@@ -25,6 +25,21 @@ function LivePeerVideo() {
       window.ethereum
     );
 
+  useEffect(() => {async () => {
+    await provider
+    .getSigner()
+    .getAddress()
+    .then((address) => {
+      setJoineeAddress(address);
+    });
+  }});
+
+
+  const [
+    showVideo,
+    setShowVideo,
+  ] = useState(false);
+    
   const SuperLiveContract =
     new ethers.Contract(
       process.env.REACT_APP_F5LABS_LIVE_PEER_SMART_CONTRACT_ADDRESS,
@@ -52,6 +67,7 @@ function LivePeerVideo() {
           provider,
           address
         );
+        setShowVideo(true);
       });
   };
 
@@ -107,18 +123,11 @@ function LivePeerVideo() {
       );
 
     if (hasJoined == true) {
+      console.log("Already joined");
       getStreamData(
         id,
         SuperLiveContract
       );
-      setInterval(() => {
-        ExpenditureSoFar(
-          id,
-          joineeAddress,
-          SuperLiveContract
-        );
-      }, 1000);
-
       return hasJoined;
     }
 
@@ -305,7 +314,7 @@ function LivePeerVideo() {
       <Header />
       <div className="flex flex-1">
         <div className="flex-[0.7]">
-          <VideoPlayer
+          {showVideo && <VideoPlayer
             autoPlay
             loop
             muted
@@ -313,19 +322,22 @@ function LivePeerVideo() {
             width="700px"
             height="300px"
             className="rounded-lg mx-auto mt-3"
-          />
-          <button
-            className="bg-blue-500 text-white p-3 rounded-lg"
-            onClick={JoinButton}
-          >
-            Join
-          </button>
+          /> }
+          <center>
+            <button
+              className="bg-blue-500 text-white p-3 rounded-lg"
+              onClick={JoinButton}
+            >
+              Join
+            </button>
+            </center>
         </div>
         <Chats
           streamId={id}
           streamData={
             ContractgetStreamData
           }
+          walletAddress={JoineeAddress}
         />
       </div>
     </div>
