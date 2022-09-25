@@ -12,8 +12,107 @@ import {
 } from "react-icons/ai";
 import { BsEmojiSmile } from "react-icons/bs";
 import { IoSend } from "react-icons/io5";
+import { Client } from "@xmtp/xmtp-js";
+import { ethers } from "ethers";
+import { useEffect } from "react";
+import { useState } from "react";
 
-function Chats() {
+function Chats({ streamId }) {
+  const [messages, setMessages] =
+    useState("");
+
+  const Provider =
+    new ethers.providers.Web3Provider(
+      window.ethereum
+    );
+
+  useEffect(() => {
+    setInterval(() => {
+      getExistingMessages(streamId);
+    }, 1000);
+  }, [streamId]);
+
+  async function getChatroomClient(
+    stream_id
+  ) {
+    const pk = ethers.utils.keccak256(
+      ethers.utils.toUtf8Bytes(
+        stream_id
+      )
+    );
+    const wallet = new ethers.Wallet(
+      pk
+    );
+    const client = await Client.create(
+      wallet
+    );
+    return client;
+  }
+  async function getUserChatClient(
+    provider
+  ) {
+    // provider is the web3 metamask provider of the user
+    const signer = provider.getSigner();
+    const client = await Client.create(
+      signer
+    );
+    return client;
+  }
+
+  const getExistingMessages = async (
+    stream_id
+  ) => {
+    const chatroomClient =
+      await getChatroomClient(
+        stream_id
+      );
+    let existingConversations =
+      await chatroomClient.conversations.list();
+    let allMessages = [];
+    for (const conversation of existingConversations) {
+      const messagesInConversation =
+        await conversation.messages();
+      allMessages = allMessages.concat(
+        messagesInConversation
+      );
+    }
+    allMessages.sort((a, b) =>
+      a.sent.getTime() >
+      b.sent.getTime()
+        ? 1
+        : -1
+    );
+
+    // This all messages is the thing, the info we need are stored in .sent, .senderAddress, and .content fields
+    for (let message of allMessages) {
+      let messageString = `${message.sent} : ${message.senderAddress} : ${message.content}`;
+      console.log(messageString);
+    }
+    existingConversations =
+      await chatroom.conversations.list();
+    console.log(existingConversations);
+  };
+
+  const sendMessage = async (
+    provider,
+    stream_id
+  ) => {
+    const chatroomClient =
+      await getChatroomClient(
+        stream_id
+      );
+    const chatRoomAddress =
+      chatroomClient.address;
+    const userClient =
+      await getUserChatClient(provider);
+    const conversation =
+      await userClient.conversations.newConversation(
+        chatRoomAddress
+      );
+    let message = `${messages}`;
+    await conversation.send(message);
+  };
+
   return (
     <div className="flex-[0.3]">
       <div className="flex bg-superlive_blue items-center justify-between space-x-3 mb-2 rounded-lg p-2 mt-3">
@@ -61,6 +160,10 @@ function Chats() {
           variant="filled"
           placeholder="Type message..."
           className="mt-2"
+          type="text"
+          onChange={(e) => {
+            setMessages(e.target.value);
+          }}
         />
         <div className="flex items-center justify-between mb-2 mt-2">
           <div className="flex space-x-5 text-xl text-white">
@@ -74,7 +177,14 @@ function Chats() {
             rightIcon={<IoSend />}
             bg="#246BFD"
             color="#ffffff"
-            className="hover:text-black"
+            className="hover:text-black disabled:cursor-not-allowed"
+            disabled={messages === ""}
+            onClick={() => {
+              sendMessage(
+                Provider,
+                streamId
+              );
+            }}
           >
             Send
           </Button>

@@ -10,6 +10,7 @@ import config from "./config/config";
 import {
   Contract,
   ethers,
+  BigNumber,
 } from "ethers";
 import abi from "./abi/SuperliveAbi.json";
 import Header from "./Header";
@@ -21,6 +22,11 @@ import {
   Select,
   Tooltip,
   Skeleton,
+  NumberInput,
+  NumberInputField,
+  NumberInputStepper,
+  NumberIncrementStepper,
+  NumberDecrementStepper,
 } from "@chakra-ui/react";
 import { MdContentCopy } from "react-icons/md";
 import { FaShareSquare } from "react-icons/fa";
@@ -30,6 +36,7 @@ import {
   BsFillMicFill,
 } from "react-icons/bs";
 import { IoMdArrowDropdown } from "react-icons/io";
+import Chats from "./Chats";
 
 function Main() {
   const videoEl = useRef(null);
@@ -96,11 +103,17 @@ function Main() {
     setStreamUrlLoading,
   ] = useState(true);
 
-  const big = BigInt(
+  /*const big = BigInt(
     Number(
       Number(perSecondCost) * 10 ** 18
     )
-  );
+  );*/
+
+  const rate = BigNumber.from(10)
+    .pow(18)
+    .mul(Number(perSecondCost))
+    .div(3600);
+
   const onButtonClick = async () => {
     setLoading(true);
     try {
@@ -128,7 +141,7 @@ function Main() {
           startStream(
             response?.data?.playbackId,
             SuperLiveContract,
-            big,
+            rate,
             config.goerli.paymentTokens[
               paymentTokenAddress
             ],
@@ -265,137 +278,151 @@ function Main() {
 
     return isLive;
   }
+  const format = (val) => `$` + val;
+  const parse = (val) =>
+    val.replace(/^\$/, "");
+
   return (
     <div>
       <Header />
-      <div className="relative ">
-        <video
-          className="rounded-2xl mx-auto xl:w-[40%] w-[85%] mt-7 shadow-lg"
-          ref={videoEl}
-        />
-        {live ? (
-          <div className="absolute text-white text-xs font-bold top-2 right-[29rem] bg-black/60 p-0.5 w-14 rounded-lg">
-            🟢 Live
+      <div className="flex flex-1">
+        <div className="flex-[0.7]">
+          <div className="relative ">
+            <video
+              className="rounded-2xl mx-auto mt-3 shadow-lg"
+              ref={videoEl}
+              width="600px"
+              height="300px"
+            />
+            {live ? (
+              <div className="absolute text-white text-xs font-bold top-2 right-[6rem] xl:right-[15rem] bg-black/60 p-0.5 w-14 rounded-lg">
+                🟢 Live
+              </div>
+            ) : (
+              <div className="absolute flex items-center text-white text-xs font-bold top-2 right-[6rem] xl:right-[15rem] bg-black/60 p-0.5 px-2 w-auto rounded-lg space-x-1">
+                <span className="loader"></span>
+                <span className="mb-1 mr-2">
+                  {streamStart
+                    ? "Please wait we are waiting for transaction. "
+                    : "waiting to go live"}
+                </span>
+              </div>
+            )}
           </div>
-        ) : (
-          <div className="absolute flex items-center text-white text-xs font-bold top-2 right-[29rem] bg-black/60 p-0.5 px-2 w-auto rounded-lg space-x-1">
-            <span className="loader"></span>
-            <span className="mb-1 mr-2">
-              {streamStart
-                ? "Please wait we are waiting for transaction. "
-                : "waiting to go live"}
-            </span>
-          </div>
-        )}
-      </div>
-      <div className="flex flex-col">
-        <div className="xl:w-[40%] w-[85%] flex items-center space-x-2 mx-auto mt-2 bg-white p-2 rounded-lg">
-          <Tooltip
-            label="Enter per second amount"
-            hasArrow
-          >
-            <InputGroup>
-              <InputLeftElement
-                pointerEvents="none"
-                color="green.500"
-                children="$"
-                className="font-extrabold text-xs"
-              />
+          <div className="flex flex-col">
+            <div className="xl:w-[57%] w-[80%] flex items-center space-x-2 mx-auto mt-2 bg-white p-2 rounded-lg">
+              <Tooltip
+                label="Enter per hour amount"
+                hasArrow
+              >
+                <NumberInput
+                  value={format(
+                    perSecondCost
+                  )}
+                  min={0}
+                  onChange={(e) =>
+                    setPerSecondCost(
+                      parse(e)
+                    )
+                  }
+                  className="w-full font-extrabold text-superlive_gray_input_text text-lg"
+                >
+                  <NumberInputField />
+                  <NumberInputStepper>
+                    <NumberIncrementStepper />
+                    <NumberDecrementStepper />
+                  </NumberInputStepper>
+                </NumberInput>
+              </Tooltip>
+              <Select
+                icon={
+                  <IoMdArrowDropdown />
+                }
+                variant="filled"
+                placeholder="Currency"
+                bg="#D6D6D6"
+                className="text-superlive_gray_input_text text-lg font-extrabold"
+                onChange={(e) => {
+                  setPaymentTokenAddress(
+                    e.target.value
+                  );
+                }}
+              >
+                <option value="fDAIx">
+                  FDAIx
+                </option>
+                <option value="fUSDCx">
+                  FUSDCx
+                </option>
+                <option value="fTUSDx">
+                  FTUSDx
+                </option>
+              </Select>
+
+              <div className="bg-superlive_light_blue w-full flex items-center space-x-2 h-10 rounded-md p-2 transition-all duration-300 ease-linear">
+                <Skeleton
+                  isLoaded={
+                    !streamUrlLoading
+                  }
+                >
+                  <div className="w-40">
+                    <a
+                      href={`${process.env.REACT_APP_DOMAIN_NAME}/join/${playBack}`}
+                      target="_blank"
+                    >
+                      <p className="text-xs text-blue-500 underline">
+                        {`${process.env.REACT_APP_DOMAIN_NAME}/join/${playBack}`}
+                      </p>
+                    </a>
+                  </div>
+                </Skeleton>
+                <div className="flex items-center space-x-2">
+                  <MdContentCopy className="text-blue-500 hover:cursor-pointer transition-all duration-300 ease-linear hover:text-gray-600" />
+                  <FaShareSquare className="text-blue-500 hover:cursor-pointer transition-all duration-300 ease-linear hover:text-gray-600" />
+                </div>
+              </div>
+            </div>
+            <div className="xl:w-[57%] w-[80%] flex items-center space-x-2 mx-auto mt-2 bg-white p-2 rounded-lg">
               <Input
-                placeholder="Amount"
+                placeholder="Enter your live stream name"
                 variant="filled"
                 bg="#D6D6D6"
-                className="placeholder:text-superlive_gray_input_text placeholder:font-extrabold placeholder:text-lg"
-                type="number"
+                className="placeholder:text-superlive_gray_input_text placeholder:font-extrabold placeholder:text-lg text-lg text-superlive_gray_input_text font-extrabold"
+                type="text"
                 onChange={(e) =>
-                  setPerSecondCost(
+                  setStreamName(
                     e.target.value
                   )
                 }
               />
-            </InputGroup>
-          </Tooltip>
-          <Select
-            icon={<IoMdArrowDropdown />}
-            variant="filled"
-            placeholder="Currency"
-            bg="#D6D6D6"
-            className="text-superlive_gray_input_text text-lg font-extrabold"
-            onChange={(e) => {
-              setPaymentTokenAddress(
-                e.target.value
-              );
-            }}
-          >
-            <option value="fDAIx">
-              FDAIx
-            </option>
-            <option value="fUSDCx">
-              FUSDCx
-            </option>
-            <option value="fTUSDx">
-              FTUSDx
-            </option>
-          </Select>
 
-          <div className="bg-superlive_light_blue w-full flex items-center space-x-2 h-10 rounded-md p-2 transition-all duration-300 ease-linear">
-            <Skeleton
-              isLoaded={
-                !streamUrlLoading
-              }
-            >
-              <div className="w-40">
-                <a
-                  href={`${process.env.REACT_APP_DOMAIN_NAME}/join/${playBack}`}
-                  target="_blank"
-                >
-                  <p className="text-xs text-blue-500 underline">
-                    {`${process.env.REACT_APP_DOMAIN_NAME}/join/${playBack}`}
-                  </p>
-                </a>
+              <button
+                onClick={() => {
+                  onButtonClick();
+                }}
+                disabled={
+                  streamName === "" ||
+                  perSecondCost === 0 ||
+                  paymentTokenAddress ===
+                    ""
+                }
+                className="bg-superlive_blue text-white font-extrabold text-sm p-1 w-40 h-10 rounded-md transition-all duration-300 ease-linear hover:bg-green-500  hover:cursor-pointer disabled:cursor-not-allowed"
+              >
+                Go Live
+              </button>
+              <div className="bg-superlive_light_blue w-1/2 xl:w-[25%] flex items-center space-x-2 h-10 rounded-md p-2">
+                <div className="w-10 h-10 rounded-3xl flex items-center justify-center bg-superlive_blue text-white transition-all duration-300 ease-linear hover:bg-red-500 hover:rounded-xl hover:cursor-pointer">
+                  <BsCameraVideoFill />
+                </div>
+                <div className="w-10 h-10 rounded-3xl flex items-center justify-center bg-superlive_blue text-white transition-all duration-300 ease-linear hover:bg-red-500 hover:rounded-xl hover:cursor-pointer">
+                  <BsFillMicFill />
+                </div>
               </div>
-            </Skeleton>
-            <div className="flex items-center space-x-2">
-              <MdContentCopy className="text-blue-500 hover:cursor-pointer transition-all duration-300 ease-linear hover:text-gray-600" />
-              <FaShareSquare className="text-blue-500 hover:cursor-pointer transition-all duration-300 ease-linear hover:text-gray-600" />
             </div>
           </div>
         </div>
-        <div className="xl:w-[40%] w-[85%] flex items-center space-x-2 mx-auto mt-2 bg-white p-2 rounded-lg">
-          <Input
-            placeholder="Enter your live stream name"
-            variant="filled"
-            bg="#D6D6D6"
-            className="placeholder:text-superlive_gray_input_text placeholder:font-extrabold placeholder:text-lg"
-            type="text"
-            onChange={(e) =>
-              setStreamName(
-                e.target.value
-              )
-            }
-          />
-
-          <button
-            onClick={() => {
-              onButtonClick();
-            }}
-            disabled={
-              streamName === "" ||
-              perSecondCost === 0 ||
-              paymentTokenAddress === ""
-            }
-            className="bg-superlive_blue text-white font-extrabold text-sm p-1 w-40 h-10 rounded-md transition-all duration-300 ease-linear hover:bg-green-500  hover:cursor-pointer disabled:cursor-not-allowed"
-          >
-            Go Live
-          </button>
-          <div className="bg-superlive_light_blue w-1/2 xl:w-[25%] flex items-center space-x-2 h-10 rounded-md p-2">
-            <div className="w-10 h-10 rounded-3xl flex items-center justify-center bg-superlive_blue text-white transition-all duration-300 ease-linear hover:bg-red-500 hover:rounded-xl hover:cursor-pointer">
-              <BsCameraVideoFill />
-            </div>
-            <div className="w-10 h-10 rounded-3xl flex items-center justify-center bg-superlive_blue text-white transition-all duration-300 ease-linear hover:bg-red-500 hover:rounded-xl hover:cursor-pointer">
-              <BsFillMicFill />
-            </div>
-          </div>
+        <div className="flex-[0.3]">
+          <Chats streamId={playBack} />
         </div>
       </div>
     </div>
