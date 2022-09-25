@@ -15,6 +15,7 @@ function ChatContent({
   id,
   send,
   senderAddress,
+  ownerAddress,
 }) {
   const [show, setShow] =
     useState(false);
@@ -22,27 +23,13 @@ function ChatContent({
   const handleToggle = () =>
     setShow(!show);
 
-  const Provider =
-    new ethers.providers.Web3Provider(
-      window.ethereum
-    );
-
-  const [Address, setAddress] =
-    useState("");
-
-  useEffect(() => {
-    Provider.getSigner()
-      .getAddress()
-      .then((address) => {
-        setAddress(address);
-      });
-  }, []);
   return (
     <div
       className={`bg-white rounded-md mb-3`}
       key={id}
     >
-      {Address === senderAddress && (
+      {ownerAddress ===
+        senderAddress && (
         <div className="absolute top-5 left-3 -rotate-45">
           <FaCrown className="text-lg text-yellow-600" />
         </div>

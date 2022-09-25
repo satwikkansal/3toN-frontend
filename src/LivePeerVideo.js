@@ -16,7 +16,7 @@ import Chats from "./Chats";
 function LivePeerVideo() {
   const { id } = useParams();
   const [
-    joineeAddress,
+    JoineeAddress,
     setJoineeAddress,
   ] = useState("");
 
@@ -45,7 +45,7 @@ function LivePeerVideo() {
       .getSigner()
       .getAddress()
       .then((address) => {
-        console.log(address);
+        setJoineeAddress(address);
         join(
           id,
           SuperLiveContract,
@@ -54,6 +54,35 @@ function LivePeerVideo() {
         );
       });
   };
+
+  const [
+    ContractgetStreamData,
+    setContractGetStreamData,
+  ] = useState([]);
+
+  async function getStreamData(
+    streamid,
+    contract
+  ) {
+    let getdata =
+      await contract.getStreamData(
+        streamid
+      );
+    setContractGetStreamData(getdata);
+  }
+
+  async function ExpenditureSoFar(
+    streamId,
+    participant,
+    Contract
+  ) {
+    let expenditureSoFar =
+      await Contract.expenditureSoFar(
+        streamId,
+        participant
+      );
+    console.log(expenditureSoFar);
+  }
 
   async function join(
     streamId,
@@ -76,10 +105,22 @@ function LivePeerVideo() {
         streamId,
         joineeAddress
       );
-    
-      if (hasJoined == true) {
-        return hasJoined;
-      }
+
+    if (hasJoined == true) {
+      getStreamData(
+        id,
+        SuperLiveContract
+      );
+      setInterval(() => {
+        ExpenditureSoFar(
+          id,
+          joineeAddress,
+          SuperLiveContract
+        );
+      }, 1000);
+
+      return hasJoined;
+    }
 
     let paymentTokenAddress =
       streamData.token;
@@ -190,15 +231,37 @@ function LivePeerVideo() {
     //     joineeAddress
     //   );
 
-    let flowOperatorData = await sf.cfaV1.getFlowOperatorData({superToken: streamData.token, sender: joineeAddress, flowOperator: contract.address, providerOrSigner: metamaskProvider});
-    let currentFlowAllowance = ethers.BigNumber.from(flowOperatorData.flowRateAllowance);
+    let flowOperatorData =
+      await sf.cfaV1.getFlowOperatorData(
+        {
+          superToken: streamData.token,
+          sender: joineeAddress,
+          flowOperator:
+            contract.address,
+          providerOrSigner:
+            metamaskProvider,
+        }
+      );
+    let currentFlowAllowance =
+      ethers.BigNumber.from(
+        flowOperatorData.flowRateAllowance
+      );
 
-    console.log("Current flow allowance is" + currentFlowAllowance);
+    console.log(
+      "Current flow allowance is" +
+        currentFlowAllowance
+    );
 
     if (
-      currentFlowAllowance < streamData.rate
+      currentFlowAllowance <
+      streamData.rate
     ) {
-      console.log("Flowrate allowance to be set is", streamData.rate, contract.address, streamData.token);
+      console.log(
+        "Flowrate allowance to be set is",
+        streamData.rate,
+        contract.address,
+        streamData.token
+      );
       let updateFlowOperatorOperation =
         await sf.cfaV1.updateFlowOperatorPermissions(
           {
@@ -217,11 +280,13 @@ function LivePeerVideo() {
           joineeSigner
         );
       let txnReceipt = await txn.wait();
-      console.log("Flow updated")
+      console.log("Flow updated");
     }
 
     // Now after all this we can call join function, which'd create flow on operators behalf
-    let joinTxn = await contract.connect(joineeSigner).join(streamId);
+    let joinTxn = await contract
+      .connect(joineeSigner)
+      .join(streamId);
     let joinTxnReceipt =
       await joinTxn.wait();
 
@@ -256,7 +321,12 @@ function LivePeerVideo() {
             Join
           </button>
         </div>
-        <Chats />
+        <Chats
+          streamId={id}
+          streamData={
+            ContractgetStreamData
+          }
+        />
       </div>
     </div>
   );

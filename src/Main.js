@@ -27,8 +27,23 @@ import {
   NumberInputStepper,
   NumberIncrementStepper,
   NumberDecrementStepper,
+  Modal,
+  ModalOverlay,
+  ModalContent,
+  ModalHeader,
+  ModalFooter,
+  ModalBody,
+  ModalCloseButton,
+  useDisclosure,
+  FormControl,
+  FormLabel,
+  Button,
 } from "@chakra-ui/react";
-import { MdContentCopy } from "react-icons/md";
+
+import {
+  MdContentCopy,
+  MdSettings,
+} from "react-icons/md";
 import { FaShareSquare } from "react-icons/fa";
 import {
   BsCameraVideo,
@@ -240,6 +255,22 @@ function Main() {
     );
   const [streamStart, setStreamStart] =
     useState(false);
+  const [
+    ContractgetStreamData,
+    setContractGetStreamData,
+  ] = useState([]);
+
+  async function getStreamData(
+    streamid,
+    contract
+  ) {
+    let getdata =
+      await contract.getStreamData(
+        streamid
+      );
+    setContractGetStreamData(getdata);
+  }
+
   async function startStream(
     streamId,
     contract,
@@ -269,6 +300,7 @@ function Main() {
       setStreamUrlLoading(false);
       setLive(true);
       setStreamStart(false);
+      getStreamData(streamId, contract);
     }
     // check status
     let isLive =
@@ -281,9 +313,72 @@ function Main() {
   const format = (val) => `$` + val;
   const parse = (val) =>
     val.replace(/^\$/, "");
+  const { isOpen, onOpen, onClose } =
+    useDisclosure();
 
   return (
     <div>
+      <Modal
+        isOpen={isOpen}
+        onClose={onClose}
+      >
+        <ModalOverlay />
+        <ModalContent>
+          <ModalHeader>
+            Advanced configurations
+          </ModalHeader>
+          <ModalCloseButton />
+          <ModalBody>
+            <FormControl>
+              <FormLabel>
+                Max Participants
+              </FormLabel>
+              <NumberInput
+                defaultValue={1000}
+              >
+                <NumberInputField />
+                <NumberInputStepper>
+                  <NumberIncrementStepper />
+                  <NumberDecrementStepper />
+                </NumberInputStepper>
+              </NumberInput>
+              <FormLabel>
+                Max Duration
+              </FormLabel>
+              <NumberInput
+                defaultValue={120}
+              >
+                <NumberInputField />
+                <NumberInputStepper>
+                  <NumberIncrementStepper />
+                  <NumberDecrementStepper />
+                </NumberInputStepper>
+              </NumberInput>
+              <FormLabel>
+                Free Preview
+              </FormLabel>
+              <NumberInput
+                defaultValue={5}
+              >
+                <NumberInputField />
+                <NumberInputStepper>
+                  <NumberIncrementStepper />
+                  <NumberDecrementStepper />
+                </NumberInputStepper>
+              </NumberInput>
+            </FormControl>
+          </ModalBody>
+          <ModalFooter>
+            <Button
+              bg="#246BFD"
+              color="white"
+              className="hover:text-black"
+            >
+              Save
+            </Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
       <Header />
       <div className="flex flex-1">
         <div className="flex-[0.7]">
@@ -410,19 +505,45 @@ function Main() {
               >
                 Go Live
               </button>
-              <div className="bg-superlive_light_blue w-1/2 xl:w-[25%] flex items-center space-x-2 h-10 rounded-md p-2">
-                <div className="w-10 h-10 rounded-3xl flex items-center justify-center bg-superlive_blue text-white transition-all duration-300 ease-linear hover:bg-red-500 hover:rounded-xl hover:cursor-pointer">
-                  <BsCameraVideoFill />
-                </div>
-                <div className="w-10 h-10 rounded-3xl flex items-center justify-center bg-superlive_blue text-white transition-all duration-300 ease-linear hover:bg-red-500 hover:rounded-xl hover:cursor-pointer">
-                  <BsFillMicFill />
-                </div>
+              <div className="bg-superlive_light_blue w-1/2 xl:w-[30%] flex items-center space-x-2 h-10 rounded-md p-2">
+                <Tooltip
+                  label="off Video"
+                  hasArrow
+                >
+                  <div className="w-10 h-10 rounded-3xl flex items-center justify-center bg-superlive_blue text-white transition-all duration-300 ease-linear hover:bg-red-500 hover:rounded-xl hover:cursor-pointer">
+                    <BsCameraVideoFill />
+                  </div>
+                </Tooltip>
+                <Tooltip
+                  label="off Mic"
+                  hasArrow
+                >
+                  <div className="w-10 h-10 rounded-3xl flex items-center justify-center bg-superlive_blue text-white transition-all duration-300 ease-linear hover:bg-red-500 hover:rounded-xl hover:cursor-pointer">
+                    <BsFillMicFill />
+                  </div>
+                </Tooltip>
+                <Tooltip
+                  label="Advanced configurations"
+                  hasArrow
+                >
+                  <div
+                    className="w-10 h-10 rounded-3xl flex items-center justify-center bg-superlive_blue text-white transition-all duration-300 ease-linear hover:bg-red-500 hover:rounded-xl hover:cursor-pointer"
+                    onClick={onOpen}
+                  >
+                    <MdSettings />
+                  </div>
+                </Tooltip>
               </div>
             </div>
           </div>
         </div>
         <div className="flex-[0.3]">
-          <Chats streamId={playBack} />
+          <Chats
+            streamId={playBack}
+            streamData={
+              ContractgetStreamData
+            }
+          />
         </div>
       </div>
     </div>

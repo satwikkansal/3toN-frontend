@@ -16,12 +16,18 @@ import { Client } from "@xmtp/xmtp-js";
 import { ethers } from "ethers";
 import { useEffect } from "react";
 import { useState } from "react";
+import Moment from "react-moment";
+import abi from "./abi/SuperliveAbi.json";
+import Stats from "./Stats";
 
 window.Buffer =
   window.Buffer ||
   require("buffer").Buffer;
 
-function Chats({ streamId }) {
+function Chats({
+  streamId,
+  streamData,
+}) {
   const [messages, setMessages] =
     useState("");
   const [chats, setChats] = useState(
@@ -33,9 +39,22 @@ function Chats({ streamId }) {
       window.ethereum
     );
 
+  const signer = Provider.getSigner();
+
+  const SuperLiveContract =
+    new ethers.Contract(
+      process.env.REACT_APP_F5LABS_LIVE_PEER_SMART_CONTRACT_ADDRESS,
+      abi,
+      signer
+    );
+
   useEffect(() => {
     setInterval(() => {
       getExistingMessages(streamId);
+      getNumbersOfJoinees(
+        streamId,
+        SuperLiveContract
+      );
     }, 1000);
   }, [streamId]);
 
@@ -64,6 +83,24 @@ function Chats({ streamId }) {
       signer
     );
     return client;
+  }
+  const [views, setViews] =
+    useState("0");
+
+  async function getNumbersOfJoinees(
+    streamid,
+    contract
+  ) {
+    let getnumbersOfJoinees =
+      await contract.numJoinees(
+        streamid
+      );
+    console.log(
+      getnumbersOfJoinees?.toString()
+    );
+    setViews(
+      getnumbersOfJoinees?.toString()
+    );
   }
 
   const getExistingMessages = async (
@@ -130,34 +167,30 @@ function Chats({ streamId }) {
 
   return (
     <div className="flex-[0.3]">
-      <div className="flex bg-superlive_blue items-center justify-between space-x-3 mb-2 rounded-lg p-2 mt-3">
-        <div className="flex items-center justify-center bg-superlive_light_blue h-20 w-full rounded-lg">
-          <h1 className="text-3xl font-extrabold">
-            💸 17.77
-          </h1>
-        </div>
-        <div className="w-full space-y-2">
-          <div className="flex items-center justify-center bg-superlive_light_blue h-9 w-full rounded-lg space-x-2 text-xl font-extrabold">
-            <AiOutlineEye className="text-gray-600" />
-            <h1>3 Views</h1>
+      <Stats views={views} />
+      <div className="overflow-y-scroll h-[51%] bg-[#333333] rounded-lg p-2 no-scrollbar space-y-3 fixed top-48 mr-4 w-[29.5%]">
+        {chats?.length === 0 ? (
+          <div className="mx-auto flex justify-center items-center h-full max-w-full text-white font-extrabold text-xl">
+            No Chat
           </div>
-          <div className="flex items-center justify-center bg-superlive_light_blue h-9 w-full rounded-lg space-x-2 text-xl font-extrabold">
-            <AiOutlineClockCircle className="text-gray-600" />
-            <h1>13m 14s</h1>
-          </div>
-        </div>
-      </div>
-      <div className="overflow-y-scroll h-[51%] bg-[#333333] rounded-lg p-2 no-scrollbar space-y-3 fixed top-48 mr-4">
-        {chats?.map((chat, i) => (
-          <ChatContent
-            message={chat?.content}
-            id={i}
-            send={chat?.timestamp}
-            senderAddress={
-              chat?.senderAddress
-            }
-          />
-        ))}
+        ) : (
+          <>
+            {chats?.map((chat, i) => (
+              <ChatContent
+                key={i}
+                message={chat?.content}
+                id={i}
+                send={chat?.timestamp}
+                senderAddress={
+                  chat?.senderAddress
+                }
+                ownerAddress={
+                  streamData?.owner
+                }
+              />
+            ))}
+          </>
+        )}
       </div>
       <div className="z-[9999] bg-[#333333] p-2 fixed bottom-0 w-[29.3%] rounded-t-lg">
         <Input
