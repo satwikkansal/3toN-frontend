@@ -17,11 +17,16 @@ import { ethers } from "ethers";
 import { useEffect } from "react";
 import { useState } from "react";
 
-window.Buffer = window.Buffer || require("buffer").Buffer;
+window.Buffer =
+  window.Buffer ||
+  require("buffer").Buffer;
 
 function Chats({ streamId }) {
   const [messages, setMessages] =
     useState("");
+  const [chats, setChats] = useState(
+    []
+  );
 
   const Provider =
     new ethers.providers.Web3Provider(
@@ -66,7 +71,7 @@ function Chats({ streamId }) {
   ) => {
     const chatroomClient =
       await getChatroomClient(
-        "e646b5u1hapwiut3"
+        stream_id
       );
     let existingConversations =
       await chatroomClient.conversations.list();
@@ -85,14 +90,22 @@ function Chats({ streamId }) {
         : -1
     );
 
+    let messages = [];
+
     // This all messages is the thing, the info we need are stored in .sent, .senderAddress, and .content fields
     for (let message of allMessages) {
-      let messageString = `${message.sent} : ${message.senderAddress} : ${message.content}`;
-      console.log(messageString);
+      //let messageString = `${message.sent} : ${message.senderAddress} : ${message.content}`;
+      let conversation = {
+        timestamp: `${message.sent}`,
+        senderAddress:
+          message.senderAddress,
+        content: message.content,
+      };
+      messages.push(conversation);
+      setChats(messages);
     }
     existingConversations =
       await chatroomClient.conversations.list();
-    console.log(existingConversations);
   };
 
   const sendMessage = async (
@@ -135,26 +148,16 @@ function Chats({ streamId }) {
         </div>
       </div>
       <div className="overflow-y-scroll h-[51%] bg-[#333333] rounded-lg p-2 no-scrollbar space-y-3 fixed top-48 mr-4">
-        <ChatContent
-          message="Lorem Ipsum is simply dummy text of the printing and typesetting industry. Lorem Ipsum has been the industry's standard dummy text ever since the 1500s, when an unknown printer took a galley of type and scrambled it to make a type specimen book. It has survived not only five centuries, but also the leap into electronic typesetting, remaining essentially unchanged. It was popularised in the 1960s with the release of Letraset sheets containing Lorem Ipsum passages, and more recently with desktop publishing software like Aldus PageMaker including versions of Lorem Ipsum."
-          num={3}
-        />
-        <ChatContent
-          message="Lorem Ipsum is simply dummy text of the printing and typesetting industry. Lorem Ipsum has been the industry's standard dummy text ever since the 1500s, when an unknown printer took a galley of type and scrambled it to make a type specimen book. It has survived not only five centuries, but also the leap into electronic typesetting, remaining essentially unchanged. It was popularised in the 1960s with the release of Letraset sheets containing Lorem Ipsum passages, and more recently with desktop "
-          num={3}
-        />
-        <ChatContent
-          message="Lorem Ipsum is simply dummy text of the printing and typesetting industry. Lorem Ipsum has been the industry's standard dummy text ever since the 1500s, when an unknown printer took a galley of type and scrambled it to make a type specimen book. It has survived not "
-          num={3}
-        />
-        <ChatContent
-          message="Lorem Ipsum is simply dummy text of the printing and typesetting industry. Lorem Ipsum has been the industry's standard dummy text ever since the 1500s, when an unknown printer took a galley of type and scrambled it to make a type specimen book. It has survived not "
-          num={3}
-        />
-        <ChatContent
-          message="Lorem Ipsum is simply dummy text of the printing and typesetting industry. Lorem Ipsum has been the industry's standard dummy text ever since the 1500s, when an unknown printer took a galley of type and scrambled it to make a type specimen book. It has survived not "
-          num={24}
-        />
+        {chats?.map((chat, i) => (
+          <ChatContent
+            message={chat?.content}
+            id={i}
+            send={chat?.timestamp}
+            senderAddress={
+              chat?.senderAddress
+            }
+          />
+        ))}
       </div>
       <div className="z-[9999] bg-[#333333] p-2 fixed bottom-0 w-[29.3%] rounded-t-lg">
         <Input

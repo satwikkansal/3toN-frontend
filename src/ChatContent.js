@@ -2,33 +2,65 @@ import {
   Button,
   Collapse,
 } from "@chakra-ui/react";
-import React from "react";
+import { ethers } from "ethers";
+import React, {
+  useEffect,
+} from "react";
 import { useState } from "react";
 import { MdKeyboardArrowDown } from "react-icons/md";
-
-function ChatContent({ message, num }) {
+import { FaCrown } from "react-icons/fa";
+import Moment from "react-moment";
+function ChatContent({
+  message,
+  id,
+  send,
+  senderAddress,
+}) {
   const [show, setShow] =
     useState(false);
 
   const handleToggle = () =>
     setShow(!show);
+
+  const Provider =
+    new ethers.providers.Web3Provider(
+      window.ethereum
+    );
+
+  const [Address, setAddress] =
+    useState("");
+
+  useEffect(() => {
+    Provider.getSigner()
+      .getAddress()
+      .then((address) => {
+        setAddress(address);
+      });
+  }, []);
   return (
     <div
-      className={`bg-white rounded-md mb-${num}`}
+      className={`bg-white rounded-md mb-3`}
+      key={id}
     >
+      {Address === senderAddress && (
+        <div className="absolute top-5 left-3 -rotate-45">
+          <FaCrown className="text-lg text-yellow-600" />
+        </div>
+      )}
       <div className="flex items-center p-3 space-x-3 flex-1 relative">
         <div className="flex-[0.2]">
           <img
-            src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQ-C7PEpg_KdP3ix-GO3C3DD1z0X726jo0lBQ&usqp=CAU"
+            src={`https://www.gravatar.com/avatar/${senderAddress}?default=wavatar`}
             className="w-12 h-12 rounded-full object-cover absolute top-5"
           />
         </div>
         <div className="w-full flex-[0.8]">
-          <h1 className="text-lg font-extrabold ">
-            Vitalik
+          <h1 className="text-lg font-extrabold break-all">
+            {senderAddress}
           </h1>
+
           <div className="bg-superlive_light_blue w-full p-3 rounded-lg shadow-lg relative">
-            {message?.length > 21 && (
+            {message?.length > 38 && (
               <div className="absolute top-2 right-3">
                 <MdKeyboardArrowDown
                   className={`hover:cursor-pointer ${
@@ -53,6 +85,11 @@ function ChatContent({ message, num }) {
                 {message}
               </p>
             </Collapse>
+          </div>
+          <div className="flex items-center justify-end mr-2">
+            <Moment fromNow>
+              {send}
+            </Moment>
           </div>
         </div>
       </div>
