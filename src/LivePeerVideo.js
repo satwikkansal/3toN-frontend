@@ -70,6 +70,17 @@ function LivePeerVideo() {
       await contract.getStreamData(
         streamId
       );
+
+    let hasJoined =
+      await contract.hasJoined(
+        streamId,
+        joineeAddress
+      );
+    
+      if (hasJoined == true) {
+        return hasJoined;
+      }
+
     let paymentTokenAddress =
       streamData.token;
 
@@ -173,16 +184,21 @@ function LivePeerVideo() {
     // next we use superfluid sdk-core to allow operator permission to our smart contract to
     // allow flow. Ofc we first have to check if it already exists, if it  does then we do nothing.
 
-    const operatorPermissionsExist =
-      await streamPaymentToken.isOperatorFor(
-        contract.address,
-        joineeAddress
-      );
+    // const operatorPermissionsExist =
+    //   await streamPaymentToken.isOperatorFor(
+    //     contract.address,
+    //     joineeAddress
+    //   );
+
+    let flowOperatorData = await sf.cfaV1.getFlowOperatorData({superToken: streamData.token, sender: joineeAddress, flowOperator: contract.address, providerOrSigner: metamaskProvider});
+    let currentFlowAllowance = ethers.BigNumber.from(flowOperatorData.flowRateAllowance);
+
+    console.log("Current flow allowance is" + currentFlowAllowance);
 
     if (
-      operatorPermissionsExist == false
+      currentFlowAllowance < streamData.rate
     ) {
-      // if permission doesn't exist we have to get it
+      console.log("Flowrate allowance to be set is", streamData.rate, contract.address, streamData.token);
       let updateFlowOperatorOperation =
         await sf.cfaV1.updateFlowOperatorPermissions(
           {
@@ -201,17 +217,16 @@ function LivePeerVideo() {
           joineeSigner
         );
       let txnReceipt = await txn.wait();
+      console.log("Flow updated")
     }
 
     // Now after all this we can call join function, which'd create flow on operators behalf
-    let joinTxn = await contract
-      .connect(joineeAddress)
-      .join(streamId);
+    let joinTxn = await contract.connect(joineeSigner).join(streamId);
     let joinTxnReceipt =
       await joinTxn.wait();
 
     // Lastly we check if join was successful
-    let hasJoined =
+    hasJoined =
       await contract.hasJoined(
         streamId,
         joineeAddress

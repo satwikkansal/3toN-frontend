@@ -92,7 +92,7 @@ function Chats({ streamId }) {
     }
     existingConversations =
       await chatroomClient.conversations.list();
-    console.log(existingConversations);
+    // console.log(existingConversations);
   };
 
   const sendMessage = async (
