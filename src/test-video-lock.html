@@ -1,0 +1,61 @@
+<html>
+    <head></head>
+    <body>
+        <video controls>
+            <source src="https://ia801602.us.archive.org/11/items/Rick_Astley_Never_Gonna_Give_You_Up/Rick_Astley_Never_Gonna_Give_You_Up.mp4" type="video/mp4">
+        </video>
+
+        <script>
+            (function(d, s) {
+              var js = d.createElement(s),
+                sc = d.getElementsByTagName(s)[0];
+              js.src="https://paywall.unlock-protocol.com/static/unlock.latest.min.js";
+              sc.parentNode.insertBefore(js, sc); }(document, "script"));
+          
+            // Check this page for details https://docs.unlock-protocol.com/developers/paywall/configuring-checkout
+            var unlockProtocolConfig = {
+              network: 4,
+              locks: {
+                '0x5B233028C17f66324916b909F9ad25bD03856a75': {
+                  network: 5,
+                  name: 'My stream'
+                }
+              },
+              "icon": "https://external-content.duckduckgo.com/iu/?u=https%3A%2F%2Ftse1.mm.bing.net%2Fth%3Fid%3DOIP.10UUFNA8oLdFdDpzt-Em_QHaHa%26pid%3DApi&f=1",
+              callToAction: {
+                "default": "Become a member to access the rest of the video!"
+              },
+              pessimistic: true
+            }
+          </script>
+
+          <script>
+            (function() {
+            // Set a few default variables.
+            let isUnlocked = true;
+            const previewTime = 10;
+
+            window.addEventListener('unlockProtocol.status', function(e) {
+                var unlock = e.detail
+                isUnlocked = (unlock.state === 'unlocked')
+                // Optional: call video.play() to resume the video!
+            })
+
+
+            // This assumes there is a single video on the page. Otherwise use class selectors.
+            const video = document.querySelector('video');
+            video.addEventListener('timeupdate', (event) => {
+                // This event gets triggered every time there is an update in the current time.
+                // If the video is locked and the time is above previewTime seconds
+                if (!isUnlocked && video.currentTime > previewTime) {
+                // We stop the video go back to previewTime and pause the video
+                video.currentTime = previewTime
+                video.pause()
+                // We ask the user to get a membership by loading the checkout UI
+               //  unlockProtocol.loadCheckoutModal()
+                }
+            })
+            })();
+        </script>
+    </body>
+</html>
