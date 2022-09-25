@@ -17,6 +17,8 @@ import { ethers } from "ethers";
 import { useEffect } from "react";
 import { useState } from "react";
 
+window.Buffer = window.Buffer || require("buffer").Buffer;
+
 function Chats({ streamId }) {
   const [messages, setMessages] =
     useState("");
@@ -64,7 +66,7 @@ function Chats({ streamId }) {
   ) => {
     const chatroomClient =
       await getChatroomClient(
-        stream_id
+        "e646b5u1hapwiut3"
       );
     let existingConversations =
       await chatroomClient.conversations.list();
@@ -89,7 +91,7 @@ function Chats({ streamId }) {
       console.log(messageString);
     }
     existingConversations =
-      await chatroom.conversations.list();
+      await chatroomClient.conversations.list();
     console.log(existingConversations);
   };
 
